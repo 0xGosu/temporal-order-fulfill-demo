@@ -1,5 +1,5 @@
 import { Client } from '@temporalio/client';
-import { OrderFulfillWorkflow } from './workflows';
+import { OrderFulfillWorkflow1, OrderFulfillWorkflow2, OrderFulfillWorkflow3 } from './workflows';
 import type { Order } from './interfaces/order';
 
 const sampleOrders: Order[] = [
@@ -18,8 +18,9 @@ const sampleOrders: Order[] = [
 ];
 
 export async function runWorkflows(client: Client, taskQueue: string, orders: Order[]): Promise<void> {
+  const workflowList=[OrderFulfillWorkflow1, OrderFulfillWorkflow2, OrderFulfillWorkflow3];
   const workflowPromises = orders.map((order, index) =>
-    client.workflow.execute(OrderFulfillWorkflow, {
+    client.workflow.execute(workflowList[index%workflowList.length], {
       taskQueue,
       workflowId: `order-fulfill-${index}-${Date.now()}`,
       args: [order],

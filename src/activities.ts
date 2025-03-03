@@ -1,6 +1,9 @@
 import * as activity from '@temporalio/activity';
 import { Order } from './interfaces/order';
-import { reserveInventory as reserveInventoryAPI } from './api';
+import {
+  reserveInventoryAPI,
+  undoReserveInventoryAPI
+} from './api';
 
 export async function requireApproval(order: Order): Promise<boolean> {
   console.log(`Checking order requires approval (over $10k)`);
@@ -25,27 +28,36 @@ export async function processPayment(order: Order): Promise<string> {
   }
 
   await simulateDelay(1000);
-  return `Payment processed for ${order.items.length} items`;
+  return `Payment is processed for ${order.items.length} items`;
+}
+
+export async function processRefund(order: Order): Promise<string> {
+  console.log("Processing refund...");
+
+  await simulateDelay(1000);
+  return `Refund is processed for ${order.items.length} items`;
 }
 
 export async function reserveInventory(order: Order): Promise<string> {
-  
-  // // Simulate inventory service downtime
-  // // The activity will sleep the first 3 times it is called
-  // // And throw an error to simulate API call timeout
-  // const { attempt } = activity.Context.current().info;
-  // if (attempt <= 4) {
-  //   console.log(`Inventory service down, attempt ${attempt}`);
-  //   await new Promise((resolve) => setTimeout(resolve, 10000));
-  //   throw new Error("Inventory service down");
-  // }
-
+  const info = activity.Context.current().info;
+  const idempotencyKey = `temporal:${info.workflowExecution.workflowId}:${info.activityId}`
   // Simulate inventory reservation logic
   console.log("Reserving inventory...");
-  await reserveInventoryAPI(order.items);
+  await reserveInventoryAPI(idempotencyKey, order.items);
 
   await simulateDelay(1000);
   return `Inventory reserved for ${order.items.length} items`;
+}
+
+export async function undoReserveInventory(order: Order): Promise<string> {
+  const info = activity.Context.current().info;
+  const idempotencyKey = `temporal:${info.workflowExecution.workflowId}:${info.activityId}`
+  // Simulate inventory reservation logic
+  console.log("Undo reserving inventory...");
+  await undoReserveInventoryAPI(idempotencyKey, order.items);
+
+  await simulateDelay(1000);
+  return `Inventory reserve is undo for ${order.items.length} items`;
 }
 
 export async function deliverOrder(order: Order): Promise<string> {

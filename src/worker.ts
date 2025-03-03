@@ -25,7 +25,7 @@ async function run({
 
   // Check for mTLS certificates first
   if (clientCertPath && clientKeyPath) {
-    console.log('Using mTLS authentication');
+    console.log(`Using mTLS authentication to connect to ${address}`);
     const serverRootCACertificate = serverRootCACertificatePath
       ? await fs.readFile(serverRootCACertificatePath)
       : undefined;
@@ -44,7 +44,7 @@ async function run({
   }
   // If no mTLS certificates, check for API key
   else if (clientApiKey) {
-    console.log('Using API key authentication');
+    console.log(`Using API key authentication to connect to ${address}`);
     connection = await NativeConnection.connect({
       address,
       tls: true,
@@ -56,7 +56,7 @@ async function run({
   }
   // Fallback to unencrypted connection (not recommended for production)
   else {
-    console.log('Warning: Using unencrypted connection');
+    console.log(`Warning: Using unencrypted connection to ${address}`);
     connection = await NativeConnection.connect({ address });
   }
 

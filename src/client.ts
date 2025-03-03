@@ -31,7 +31,6 @@ async function run({
   serverRootCACertificatePath,
   taskQueue,
 }: EnvWithApiKey, numOrders?: number, invalidPercentage?: number) {
-  let client: Client;
   let connection: Connection | NativeConnection;
 
   // Check for mTLS certificates first
@@ -69,14 +68,15 @@ async function run({
   else {
     console.log('Warning: Using unencrypted connection');
     connection = await Connection.connect({ address });
+    console.log('Connected to Temporal');
   }
-
+  console.log(`Generating orders with ${numOrders} orders and ${invalidPercentage}% invalid orders`); 
   // Generate orders
   const orders = numOrders && invalidPercentage !== undefined 
     ? generateOrders(numOrders, invalidPercentage) 
     : getDefaultOrders();
 
-  client = new Client({ connection, namespace });
+  const client = new Client({ connection, namespace });
   await runWorkflows(client, taskQueue, orders);
 }
 
@@ -92,21 +92,21 @@ function generateOrders(count: number, invalidPercentage: number): Order[] {
   const numInvalidOrders = Math.floor((invalidPercentage / 100) * count);
 
   for (let i = 0; i < count; i++) {
-    const numItems = getRandomInt(1, 3);
-    const items: OrderItem[] = [];
+    const numItems = getRandomInt(5, 10);
+    const orderItems: OrderItem[] = [];
 
     for (let j = 0; j < numItems; j++) {
       const itemIndex = getRandomInt(0, stockData.length - 1);
       const item = stockData[itemIndex];
-      items.push({
+      orderItems.push({
         itemName: item.itemName,
         itemPrice: item.itemPrice,
-        quantity: getRandomInt(1, 3),
+        quantity: getRandomInt(1, 99),
       });
     }
 
     const order: Order = {
-      items: items,
+      items: orderItems,
       payment: {
         creditCard: {
           number: "1234 5678 1234 5678",
@@ -136,7 +136,7 @@ const argv = yargs(hideBin(process.argv)).options({
   invalidPercentage: { type: 'number', alias: 'i' }
 }).argv as { numOrders?: number, invalidPercentage?: number };
 
-run(getEnv(), argv.numOrders, argv.invalidPercentage).then(
+run(getEnv(), 3, 0).then(
   () => process.exit(0),
   (err) => {
     console.error(err);
